@@ -1,0 +1,64 @@
+        // choose which option of these 8 options would have an smaller distance
+        // to the target
+        // get all these 4 values
+        //Route* r = alloca(sizeof(Route) + n * sizeof(float));
+        //r->size=n;
+        //r->length[0]=p[0];
+        //fill
+        // Ich mag es nicht ständig manuell die Gleiche Funktion aufzurufen.
+        // Es macht aber kein Sinn, da jeder der x und y unterschiedlich ist.
+        // Distance each Directions
+
+        //sortArray(n, p);
+        // Not an Index, because it would be needed if other ways are blocked. 
+
+        /*
+        float args[4][2] = {
+            (float)((player1->x  )-c_pos.x), (float)((player1->y-1)-c_pos.y),
+            (float)((player1->x-1)-c_pos.x), (float)((player1->y  )-c_pos.y),
+            (float)((player1->x  )-c_pos.x), (float)((player1->y+1)-c_pos.y),
+            (float)((player1->x+1)-c_pos.x), (float)((player1->y  )-c_pos.y)
+        };
+
+        float (*fptr)(float, float);
+        fptr = &Dlength;
+        Delegate(n, p, args, fptr);
+        */
+
+
+
+        //oldlenght =,,..
+
+        //int index;
+        //for (;;) {
+        //    if (
+        //}
+            
+        // Wenn man dann die Richtungen nach der Größe Sortiert, dann geht die
+        // Information verloren, zu wem das 'wasd' gehört.
+        //
+        // Option 1: Es in einem Struct mit einem Enum verbinden.
+        // Zuerst dachte ich AoS würde es mit meiner Analogie passen.
+        // Da es aber dann die Parameter weiterzugeben verkomplizieren wird,
+        // nehme ich doch SoA.
+        //
+        // Option 2: Indecies Veränderungen während des Sortierens merken.
+        //  20 5 21 50 (w a s d)
+        //  5 20 21 50 (a w s d)
+        //  Wird vermutlich auch zu kompliziert.
+        //  Die Isolierung beim normalen Sortierungs-Func und der Speicherung
+        //  wird schwierig.
+        
+        // ok o entscheide mich für d.
+        // Aber x+1 ist '1'!
+        // Dann brauche ich den nächst kleinsten Index.
+        // Und wenn der auch nicht geht, dann so lange bis in dieser Richtung
+        // kein '1' ist.
+        //
+        // Option 3: Erweiterte Min/Max funktion nur den x-letzten Wert holen.
+        // Zum Beispiel (Pseudocode):
+        // i range 3
+        // min({20 5 21 50}, i) -> 5
+        // min({20 5 21 50}, i) -> 20
+        // min({20 5 21 50}, i) -> 21
+        // min({20 5 21 50}, i) -> 50

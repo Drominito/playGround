@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/dromi/coding/c/sdl/test0/build/cmake_install.cmake",
+		"/home/dromi/coding/c/sdl/test0/build/vendored/SDL/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/mainsdl.dir/link.d CMakeFiles/mainsdl.dir/hello.cpp.o -o mainsdl  -Wl,-rpath,/home/dromi/coding/c/sdl/test0/build libSDL3.so.0.3.0

@@ -6,7 +6,7 @@
 - not just diagonal but make a direct angle to the "Coin"
 - Render in chunks, if the map is too big for the screen.
 - Implement decent Objekt/Player-System
-- More O's to collect "Like coins"
+- More O's to collect "Like coins" -> When collect despawn or move.
 - Path-Finding algorithm
 - Labyrinth with Start + End
 

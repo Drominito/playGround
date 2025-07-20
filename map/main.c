@@ -69,15 +69,32 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-#define wallCheckM(y)  wallCheck(res, map, *player, y)
+#define wallCheckM(y)  wallCheck(map.map, *player, y)
+#define MAT(m, x, y) ((m->map)[y * m->res + x])
+#define MATT(m, x, y) ((m.map)[y * m.res + x])
 //#define wallCheckM2(x)  wallCheck(res, map player##x, dire)
 
+struct Map {
+    int amount;
+    int res;
+    bool innerWalls;
+    int factor;
 
-typedef struct {
+    char map[];
+};
+
+
+struct Vec2 {
     int x;
     int y;
     int symbol;
-} Vec2;
+};
+
+typedef struct {
+    struct Vec2 pos;
+    char skin;
+    int color;
+} Object;
 
 
 typedef struct {
@@ -125,7 +142,7 @@ unsigned int current_ticks_ms() {
 }
 
 
-void getRndArea(Vec2* arr, int min, int max, int amnt) {
+void getRndArea(struct Vec2* arr, int min, int max, int amnt) {
     srand(current_ticks_ms());
     for (int i = 0; i < amnt; i++) {
         arr[i].x = rand() % (max-min) + min;
@@ -135,14 +152,12 @@ void getRndArea(Vec2* arr, int min, int max, int amnt) {
 
 int getIndex(int x, int y, int WIDTH) { return y*WIDTH+x; }
 
-void createWalls(int arrsize,
-                      char (map)[arrsize][arrsize],
-                      int density,
-                      int collectivedistance, 
-                      bool activatedInnerWalls,
-                      int amount) {
-    Vec2 rnd_array[amount];
-    getRndArea(rnd_array, 0, arrsize, amount);
+void createWalls(struct Map* map) {
+    const int arrsize = map->res;
+    const int amount  = map->amount;
+
+    struct Vec2 rnd_array[map->amount];
+    getRndArea(rnd_array, 0, arrsize, map->amount);
 
     
     for (int x=0; x < arrsize; x++) {
@@ -152,55 +167,58 @@ void createWalls(int arrsize,
             bool rules = outerwalls;
             for (int i = 0; i < amount; i++) {
                 if  (rules) {
-                    (map)[x][y] = '1'; // Wall
-                    if ( activatedInnerWalls)
-                        (map)[rnd_array[i].x][rnd_array[i].y] = '1';
+                    MAT(map, x, y) = '1'; // Wall
+                    if (map->innerWalls)
+                        MAT(map, rnd_array[i].x, rnd_array[i].y) = '1';
                 }
-                else { (map)[x][y] = '0'; }
+                else { MAT(map, x, y) = '0'; }
             }
         }
     }
 }
 
-void createTarget(int s, char (map)[s][s]) {
+void createTarget(struct Map* map) {
+    int s = map->res;
     srand(current_ticks_ms());
     for (;;) {
         int x = rand() % (s-1)+1;
         int y = rand() % (s-1)+1;
-        if (((map)[x][y] == WALL || (map)[x][y] == PLAYER_N))
+        if (MAT(map, x, y) == WALL || MAT(map, x, y) == PLAYER_N)
         { continue; }
-        else { map[x][y] = '2'; break;}
+        else { MAT(map, x, y) = '2'; break;}
 
     }
 }
 
-void getXYfrom1Darray(Vec2* result, int index, int WIDTH) {
+void getXYfrom1Darray(struct Vec2* result, int index, int WIDTH) {
     result->x = index % WIDTH;
     result->y = index / WIDTH;
 }
 
-void draw(int size, Vec2 player1, char map[size][size]) {
-
+void draw(struct Map map, Object player1) {
+    int size = map.res;
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            switch (map[x][y]) {
+            switch (MATT(map, x, y)) {
                 case '0': {con(0); mvprintw(y, x*HRES, EMPTY_P); coff(0); } break;
                 case '1': {con(1); mvprintw(y, x*HRES, TRUE_P ); coff(1); } break;
                 case '2': {con(2); mvprintw(y, x*HRES, TARGET_P); coff(2); } break;
             }
-            con(3); mvprintw(player1.y, (player1.x)*HRES, PLAYER ); coff(3);
+            con(3); mvprintw(player1.pos.y, (player1.pos.x)*HRES, PLAYER ); coff(3);
         }
     }
 }
 
-void getCinArray(int res, char (map)[res][res], char c, Vec2* out) {
+struct Vec2 getCinArray(int res, Map map, char c) {
+    struct Vec2 out;
     for (int x = 1; x < res; x++) {
         for (int y = 1; y < res; y++) {
-            if (map[x][y] == c) {
-                out->x=x; out->y=y;
+            if (MATT(map, x , y) == c) {
+                out.x=x; out.y=y;
             }
         }
     }
+    return out;
 }
 
 float Dlength(float x, float y) {
@@ -292,40 +310,41 @@ int getMinArr(int s, float* p) { float min = *p;
     for (int i = 0; i < s; i++) {
         if (p[i] < min) { min = p[i]; }
     }
-    int index = SearchIndexInArray(min, s, p);
 
 #if DEBUG == 2
+    int index = SearchIndexInArray(min, s, p);
     mvprintw(41, 0, "min-index: %d <-> min-value: %.2f", index, min);
     refresh();
     getch();
     clear();
-#endif
     return index;
+#else
+    return SearchIndexInArray(min, s, p);
+#endif
 }
 
 
 
-bool wallCheck(int res, char (map)[res][res], Vec2 player, Direction dir) {
+bool wallCheck(int res, char (map)[res][res], Object player, Direction dir) {
     //dire.DIR_UP = 0;
     //p[dire.DIR_UP] ^= 'w'
     switch (dir) {
-        case DIR_UP:    { return map[player.x  ][player.y-1] != WALL; }
-        case DIR_LEFT:  { return map[player.x-1][player.y  ] != WALL; }
-        case DIR_DOWN: { return map[player.x  ][player.y+1] != WALL; }
-        case DIR_RIGHT:  { return map[player.x+1][player.y  ] != WALL; }
+        case DIR_UP:    { return map[player.pos.x  ][player.pos.y-1] != WALL; }
+        case DIR_LEFT:  { return map[player.pos.x-1][player.pos.y  ] != WALL; }
+        case DIR_DOWN:  { return map[player.pos.x  ][player.pos.y+1] != WALL; }
+        case DIR_RIGHT: { return map[player.pos.x+1][player.pos.y  ] != WALL; }
     }
 }
 
-void PlayerMove(Vec2* player,
-                int res,
-                char (map)[res][res]) {
+void PlayerMove(struct Map map,
+                Object* player) {
    char c = getch();
-   Vec2 c_pos; getCinArray(res, map, TARGET_N, &c_pos);
-   float l = Dlength((float)(player->x-c_pos.x), (float)(player->y-c_pos.y));
+   struct Vec2 c_pos = getCinArray(map.res, map, TARGET_N);
+   float l = Dlength((float)(player->pos.x-c_pos.x), (float)(player->pos.y-c_pos.y));
 
 #if DEBUG == 1
-   mvprintw(res, 0, "p.x/py = %d/%d | c.x/c.y = %d/%d\nl=%f", player->x,
-            player->y, c_pos.x, c_pos.y, l);
+   mvprintw(map.res, 0, "p.x/py = %d/%d | c.x/c.y = %d/%d\nl=%f", player->pos.x,
+            player->pos.y, c_pos.x, c_pos.y, l);
 #endif
 
    refresh();
@@ -333,10 +352,10 @@ void PlayerMove(Vec2* player,
    if (c == 'o') {
        const int size = 4;
        float p[size];
-       p[0] = Dlength((float)((player->x  )-c_pos.x), (float)((player->y-1)-c_pos.y));
-       p[1] = Dlength((float)((player->x-1)-c_pos.x), (float)((player->y  )-c_pos.y));
-       p[2] = Dlength((float)((player->x  )-c_pos.x), (float)((player->y+1)-c_pos.y));
-       p[3] = Dlength((float)((player->x+1)-c_pos.x), (float)((player->y  )-c_pos.y));
+       p[0] = Dlength((float)((player->pos.x  )-c_pos.x), (float)((player->pos.y-1)-c_pos.y));
+       p[1] = Dlength((float)((player->pos.x-1)-c_pos.x), (float)((player->pos.y  )-c_pos.y));
+       p[2] = Dlength((float)((player->pos.x  )-c_pos.x), (float)((player->pos.y+1)-c_pos.y));
+       p[3] = Dlength((float)((player->pos.x+1)-c_pos.x), (float)((player->pos.y  )-c_pos.y));
 
        //int index = getMinArr(size, p);
        int index = 0;
@@ -379,30 +398,34 @@ void PlayerMove(Vec2* player,
         //bool wallNearby = wallCheck(res, map, *player);
 
         if (c == 'w' && wallCheckM(DIR_UP)) {
-            player->y--;
+            player->pos.y--;
         } 
 
         if (c == 'a' && wallCheckM(DIR_LEFT)) {
-            player->x--;
+            player->pos.x--;
         }
 
         if (c == 's' && wallCheckM(DIR_DOWN)) {
-            player->y++;
+            player->pos.y++;
         }
 
         if (c == 'd' && wallCheckM(DIR_RIGHT)) {
-            player->x++;
+            player->pos.x++;
         }
 }
 
 
-void loop(int res, Vec2 player1, char (map)[res][res]) {
+void loop(struct Map map, Object player) {
     for (int t = 0;;t++) {
         refresh();
-        draw(res, player1, map);
+        draw(map, player);
 
-        mvprintw(50, 0, "Timese have moved: %f", (float)t/(res*res)*100);
-        PlayerMove(&player1, res, map);
+        mvprintw(50, 0, "Timese have moved: %f", (float)t/(map.res*map.res)*100);
+        //autoPilot();
+        PlayerMove(&player, map.res, map);
+        //createTarget(&map);
+        //createWalls(&map);
+
     }
 }
 
@@ -413,24 +436,30 @@ int main(int argc, char* argv[]) {
     curs_set(0);
 
     start_color();
-    init_pair(1, COLOR_WHITE, COLOR_GREEN);
-    init_pair(2, COLOR_RED, COLOR_BLACK);
-    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+    init_pair(1, COLOR_WHITE, COLOR_GREEN); // wall
+    init_pair(2, COLOR_RED, COLOR_BLACK);   // object
+    init_pair(3, COLOR_WHITE, COLOR_BLACK); // player
 
-    int  res        = atoi(argv[1]);
-    bool innerWalls = atoi(argv[2]);
-    int  factor     = atoi(argv[3]);
+    
+    struct Map map = alloca(sizeof(char)*map.res*map.res); 
+    map.res        = atoi(argv[1]);
+    map.innerWalls = atoi(argv[2]);
+    map.factor     = atoi(argv[3]);
+    map.amount     = map.res*(map.factor);
+    map.map        = 
 
-    char map[res][res] = {};
 
-    int mid = res/2;
-    Vec2 player1; player1.x = mid; player1.y = mid;
+    int mid = map.res/2;
+    Object player1 = {
+        .pos = { .x = mid, .y = mid}
+    };
 
-    int density=0, distance=0, amount=res*factor;
-    createWalls(res, map, density, distance, innerWalls, amount);
 
-    createTarget(res, map);
-    loop(res, player1, map);
+    // build before the game-loop
+    createWalls(&map);
+    createTarget(&map);
+
+    loop(map, player1);
        
     getch();
     endwin();

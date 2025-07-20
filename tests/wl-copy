@@ -1,0 +1,3 @@
+    memcpy(result.arr+0, arr[0], strlen(arr[0]));
+    // geht nicht -> memcpy(result.arr+strlen(arr[0]) , arr[1], strlen(arr[1]));
+    memcpy(result.arr+7 , arr[1], strlen(arr[1]));

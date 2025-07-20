@@ -1,0 +1,7 @@
+    struct Map map = {
+        .res        = atoi(argv[1]),
+        .innerWalls = atoi(argv[2]),
+        .factor     = atoi(argv[3]),
+        .amount = res*(.factor),
+        .map        = alloca(sizeof(char)*res*res)
+    };
